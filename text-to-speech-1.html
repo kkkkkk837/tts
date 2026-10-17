@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speak</title>
+<style>
+:root{--bg:#fff;--fg:#000;--muted:#777;--line:#e2e2e2;--soft:#f5f5f5;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#000;--fg:#fff;--muted:#888;--line:#252525;--soft:#111;color-scheme:dark}}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--bg);color:var(--fg);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;display:flex;justify-content:center;padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom));transition:background .4s,color .4s}
+main{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;gap:16px;min-height:0}
+h1{font-size:1.8rem;font-weight:600;letter-spacing:-.03em}
+.sub{color:var(--muted);font-size:.9rem;margin-top:4px}
+.box{border:1px solid var(--line);border-radius:16px;flex:1;min-height:0;display:flex;flex-direction:column;transition:border-color .3s}
+.box:focus-within{border-color:var(--fg)}
+textarea{flex:1;min-height:0;width:100%;resize:none;border:0;outline:0;background:transparent;color:inherit;font:inherit;font-size:1.05rem;line-height:1.55;padding:16px 18px 6px;border-radius:16px}
+.meta{display:flex;justify-content:space-between;padding:0 18px 12px;color:var(--muted);font-size:.8rem}
+.meta{align-items:center}
+.link{flex:none;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:.8rem;font-weight:400;color:var(--muted)}
+.link:hover:not(:disabled){color:var(--fg);border-color:var(--fg);opacity:1}
+.meta{align-items:center}
+.link{flex:none;padding:4px 10px;border:1px solid var(--line);background:transparent;color:var(--fg);font-size:.8rem;border-radius:999px}
+.link:hover{border-color:var(--fg);opacity:1}
+.bar{height:2px;background:var(--line);border-radius:2px;overflow:hidden;flex:none}
+.bar i{display:block;height:100%;width:0;background:var(--fg);transition:width .3s ease}
+.ctrl{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:none}
+.ctrl .wide{grid-column:1/-1}
+.f{display:flex;flex-direction:column;gap:6px;font-size:.8rem;color:var(--muted)}
+select{appearance:none;-webkit-appearance:none;width:100%;background:var(--soft);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit;font-size:.95rem;outline:0;cursor:pointer;transition:border-color .25s}
+select:hover,select:focus{border-color:var(--fg)}
+.step{display:flex;align-items:center;justify-content:space-between;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px}
+.step b{font-weight:500;font-size:1rem;color:var(--fg);font-variant-numeric:tabular-nums}
+.step button{flex:none;width:38px;height:38px;padding:0;font-size:1.2rem;line-height:1;border:0;background:transparent;border-radius:9px}
+.step button:hover{background:var(--fg);color:var(--bg);opacity:1}
+.btns{display:flex;gap:10px;flex:none;align-items:center}
+button{flex:1;padding:15px;border-radius:999px;border:1px solid var(--fg);background:var(--bg);color:var(--fg);font:inherit;font-size:1rem;font-weight:500;cursor:pointer;transition:background .25s,color .25s,transform .15s,opacity .25s}
+button.main{background:var(--fg);color:var(--bg);flex:2}
+button:hover{opacity:.85}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.3;pointer-events:none}
+button:focus-visible,select:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.eq{display:flex;gap:3px;height:14px;align-items:center;opacity:0;transition:opacity .4s}
+.eq.on{opacity:1}
+.eq b{width:3px;height:4px;background:var(--fg);border-radius:2px}
+.eq.on b{animation:eq 1s ease-in-out infinite}
+.eq b:nth-child(2){animation-delay:.15s}.eq b:nth-child(3){animation-delay:.3s}
+@keyframes eq{0%,100%{height:4px}50%{height:14px}}
+.head{display:flex;justify-content:space-between;align-items:flex-end}
+.note{color:var(--muted);font-size:.8rem;display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <header class="head">
+    <div><h1>Speak</h1><p class="sub">Type or paste text and listen.</p></div>
+    <div class="eq" id="eq"><b></b><b></b><b></b></div>
+  </header>
+
+  <div class="box">
+    <textarea id="text" placeholder="Type something to hear it spoken…" aria-label="Text to speak"></textarea>
+    <div class="meta"><span id="count">0 characters</span><button id="clear" class="link" disabled>Clear text</button><span id="status">Ready</span></div>
+  </div>
+
+  <div class="bar"><i id="prog"></i></div>
+
+  <div class="ctrl">
+    <div class="f wide">Voice<select id="voice" aria-label="Voice"></select></div>
+    <div class="f">Speed
+      <div class="step"><button id="rDown" aria-label="Slower">−</button><b id="rateV">1.0×</b><button id="rUp" aria-label="Faster">+</button></div>
+    </div>
+    <div class="f">Pitch
+      <div class="step"><button id="pDown" aria-label="Lower pitch">−</button><b id="pitchV">1.0</b><button id="pUp" aria-label="Higher pitch">+</button></div>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button class="main" id="play">Play</button>
+    <button id="pause" disabled>Pause</button>
+    <button id="stop" disabled>Stop</button>
+  </div>
+
+  <p class="note" id="note">Your browser doesn’t support speech synthesis. Try Chrome, Safari, Edge or Firefox.</p>
+</main>
+
+<script>
+const synth = window.speechSynthesis;
+const $ = id => document.getElementById(id);
+const text=$('text'),voiceSel=$('voice'),play=$('play'),pause=$('pause'),stop=$('stop'),
+      prog=$('prog'),eq=$('eq'),status=$('status');
+let voices=[], paused=false, rate=1, pitch=1;
+
+if(!synth){ $('note').style.display='block'; play.disabled=true; }
+
+function loadVoices(){
+  voices = synth.getVoices();
+  voiceSel.innerHTML='';
+  voices.forEach((v,i)=>{
+    const o=document.createElement('option');
+    o.value=i; o.textContent=v.name+' ('+v.lang+')';
+    voiceSel.appendChild(o);
+  });
+  const def = voices.findIndex(v=>v.lang.toLowerCase().startsWith((navigator.language||'en').slice(0,2).toLowerCase()));
+  if(def>-1) voiceSel.value=def;
+  try{ const s=localStorage.getItem('tts-voice'); if(s){const i=voices.findIndex(v=>v.name===s); if(i>-1) voiceSel.value=i;} }catch(e){}
+}
+if(synth){ loadVoices(); synth.onvoiceschanged=loadVoices; }
+
+function updateCount(){ $('count').textContent = text.value.length.toLocaleString()+' characters'; $('clear').disabled = !text.value; }
+text.addEventListener('input',updateCount); updateCount();
+$('clear').onclick=()=>{ text.value=''; updateCount(); };
+voiceSel.onchange=()=>{ try{localStorage.setItem('tts-voice',voices[voiceSel.value].name)}catch(e){} };
+
+const clamp=v=>Math.round(Math.min(2,Math.max(0.5,v))*10)/10;
+function show(){ $('rateV').textContent=rate.toFixed(1)+'×'; $('pitchV').textContent=pitch.toFixed(1); }
+$('rDown').onclick=()=>{rate=clamp(rate-0.1);show()};
+$('rUp').onclick=()=>{rate=clamp(rate+0.1);show()};
+$('pDown').onclick=()=>{pitch=clamp(pitch-0.1);show()};
+$('pUp').onclick=()=>{pitch=clamp(pitch+0.1);show()};
+
+function setState(s){
+  eq.classList.toggle('on', s==='playing');
+  play.disabled = s==='playing';
+  play.textContent = s==='paused' ? 'Resume' : 'Play';
+  pause.disabled = s!=='playing';
+  stop.disabled = s==='idle';
+  status.textContent = {idle:'Ready',playing:'Speaking…',paused:'Paused'}[s];
+  if(s==='idle') prog.style.width='0';
+}
+
+play.onclick=()=>{
+  if(paused){ synth.resume(); paused=false; setState('playing'); return; }
+  const t=text.value.trim(); if(!t){ status.textContent='Enter some text first'; return; }
+  synth.cancel();
+  const u=new SpeechSynthesisUtterance(t);
+  const v=voices[voiceSel.value]; if(v){u.voice=v;u.lang=v.lang;}
+  u.rate=rate; u.pitch=pitch;
+  u.onboundary=e=>{ prog.style.width=Math.min(100,(e.charIndex/t.length)*100)+'%'; };
+  u.onend=()=>{ prog.style.width='100%'; setTimeout(()=>setState('idle'),400); };
+  u.onerror=()=>setState('idle');
+  synth.speak(u);
+  setState('playing');
+};
+pause.onclick=()=>{ synth.pause(); paused=true; setState('paused'); };
+stop.onclick=()=>{ synth.cancel(); paused=false; setState('idle'); };
+window.addEventListener('beforeunload',()=>synth&&synth.cancel());
+show(); setState('idle');
+</script>
+</body>
+</html>
